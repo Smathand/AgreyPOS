@@ -1,0 +1,385 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aggrey POS System</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial;
+}
+
+body{
+    background:#eef2f7;
+}
+
+/* APP */
+.app{
+    max-width:450px;
+    margin:auto;
+    background:white;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+}
+
+.top{
+    background: rgba(0,119,182,0.9);
+    color:white;
+    padding:15px;
+    text-align:center;
+}
+
+/* PAGES */
+.page{
+    display:none;
+    padding:15px;
+    flex:1;
+}
+
+.active{
+    display:block;
+}
+
+/* INPUT */
+input{
+    width:100%;
+    padding:12px;
+    margin:6px 0;
+    border:1px solid #ccc;
+    border-radius:10px;
+}
+
+/* BUTTON */
+button{
+    width:100%;
+    padding:12px;
+    background: rgba(0,119,182,0.9);
+    color:white;
+    border:none;
+    border-radius:10px;
+    margin-top:8px;
+}
+
+#login{
+    position:fixed;
+    width:100%;
+    height:100%;
+    background:#0f172a;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.loginBox{
+    width:90%;
+    max-width:320px;
+    background:white;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+}
+
+/* PROFILE PHOTO */
+.profilePreview{
+    width:90px;
+    height:90px;
+    border-radius:50%;
+    object-fit:cover;
+    border:3px solid #0f172a;
+    margin:10px auto;
+    cursor:pointer;
+    display:block;
+}
+
+#fileInput{
+    display:none;
+}
+
+
+/* CARD */
+.card{
+    background:#f8fafc;
+    padding:10px;
+    margin:8px 0;
+    border-radius:10px;
+    border-left:4px solid #0f172a;
+}
+
+/* NAV */
+.nav{
+    display:flex;
+    justify-content:space-around;
+    background: rgba(0,119,182,0.9);
+    color:white;
+    padding:10px;
+}
+
+.nav button{
+    background:none;
+    border:none;
+    color:white;
+}
+
+.pageHeader{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px;
+    background:rgba(0,119,182,0.9);
+    color:white;
+    border-radius:8px;
+}
+
+.logoutBtn{
+    background-color: rgba(205, 95, 55);
+    border:none;
+    color:white;
+    width:70px;
+    padding:8px;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <div class="loginBox">
+
+    <h3>Aggrey POS System</h3>
+
+    <!-- PROFILE PHOTO -->
+    <img id="preview" class="profilePreview"
+    src="https://cdn-icons-png.flaticon.com/512/847/847969.png"
+    onclick="document.getElementById('fileInput').click()">
+
+    <input type="file" id="fileInput" accept="image/*" onchange="loadPhoto(event)">
+
+    <input id="user" placeholder="Username">
+    <input id="pass" type="password" placeholder="Password">
+
+    <button onclick="login()">Login</button>
+
+    <hr style="margin:10px 0">
+
+    <h4>Change Password</h4>
+
+    <input id="oldPass" type="password" placeholder="Old Password">
+    <input id="newPass" type="password" placeholder="New Password">
+    <button onclick="changePassword()">Change Password</button>
+
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app">
+
+<div class="top">Aggrey POS System</div>
+
+<!-- PAGE 1 -->
+<div id="salePage" class="page active">
+
+<div class="pageHeader">
+<h3>POS</h3>
+<button class="logoutBtn" onclick="logout()">Logout</button>
+</div>
+
+<input id="product" placeholder="Product">
+<input id="price" type="number" placeholder="Price">
+<input id="qty" type="number" placeholder="Qty">
+
+<button onclick="addSale()">Save Sale</button>
+
+<div class="card">Total: TSH <span id="total">0</span></div>
+
+</div>
+
+
+<!-- PAGE 2 -->
+<div id="historyPage" class="page">
+<h3>History</h3>
+<div id="history"></div>
+</div>
+
+<!-- PAGE 3 -->
+<div id="summaryPage" class="page">
+<h3>Summary</h3>
+
+<div class="card">Total: TSH <span id="total2">0</span></div>
+<div class="card">Items: <span id="items">0</span></div>
+
+<button onclick="sendWhatsApp()" style=" background-color: rgba(205, 95, 55);"> Send Report to Boss</button>
+
+</div>
+
+<!-- NAV -->
+<div class="nav">
+<button onclick="show('salePage')">POS</button>
+<button onclick="show('historyPage')">History</button>
+<button onclick="show('summaryPage')">Summary</button>
+</div>
+
+</div>
+
+<script>
+
+let sales = JSON.parse(localStorage.getItem("mobilePOS")) || [];
+
+if(!localStorage.getItem("password")){
+localStorage.setItem("password","1234");
+}
+
+/* PROFILE PHOTO */
+function loadPhoto(event){
+let file = event.target.files[0];
+let reader = new FileReader();
+
+reader.onload = function(){
+    localStorage.setItem("profilePic", reader.result);
+    document.getElementById("preview").src = reader.result;
+};
+
+reader.readAsDataURL(file);
+}
+
+window.onload = function(){
+let pic = localStorage.getItem("profilePic");
+if(pic){
+document.getElementById("preview").src = pic;
+}
+};
+
+/* LOGIN */
+function login(){
+let u=document.getElementById("user").value;
+let p=document.getElementById("pass").value;
+
+if(u==="admin" && p===localStorage.getItem("password")){
+document.getElementById("login").style.display="none";
+}else{
+alert("Wrong Password");
+}
+}
+
+/* CHANGE PASSWORD */
+function changePassword(){
+let oldP=document.getElementById("oldPass").value;
+let newP=document.getElementById("newPass").value;
+
+if(oldP !== localStorage.getItem("password")){
+alert("Old password wrong");
+return;
+}
+
+if(!newP){
+alert("Enter new password");
+return;
+}
+
+localStorage.setItem("password",newP);
+alert("Password changed");
+}
+
+/* LOGOUT FIXED */
+function logout(){
+document.getElementById("login").style.display="flex";
+document.getElementById("user").value="";
+document.getElementById("pass").value="";
+}
+
+/* NAV */
+function show(p){
+document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
+document.getElementById(p).classList.add("active");
+}
+
+/* ADD SALE */
+function addSale(){
+
+let p=document.getElementById("product");
+let pr=document.getElementById("price");
+let q=document.getElementById("qty");
+
+if(!p.value||!pr.value||!q.value) return alert("Fill all");
+
+let total=pr.value*q.value;
+
+sales.push({
+product:p.value,
+price:+pr.value,
+qty:+q.value,
+total,
+time:new Date().toLocaleString()
+});
+
+localStorage.setItem("mobilePOS",JSON.stringify(sales));
+
+p.value=""; pr.value=""; q.value="";
+
+render();
+}
+
+/* RENDER */
+function render(){
+
+let h=document.getElementById("history");
+h.innerHTML="";
+
+let total=0;
+let items=0;
+
+sales.forEach(s=>{
+total+=s.total;
+items+=s.qty;
+
+h.innerHTML+=`
+<div class="card">
+<b>${s.product}</b><br>
+Qty: ${s.qty}<br>
+TSH ${s.total}<br>
+<small>${s.time}</small>
+</div>`;
+});
+
+document.getElementById("total").innerText=total;
+document.getElementById("total2").innerText=total;
+document.getElementById("items").innerText=items;
+}
+
+/* WHATSAPP */
+function sendWhatsApp(){
+
+let total=0;
+let items=0;
+let msg="🧾 *POS DAILY REPORT*\n\n";
+
+sales.forEach(s=>{
+total+=s.total;
+items+=s.qty;
+msg+=`• ${s.product} - Qty:${s.qty} - TSH ${s.total}\n`;
+});
+
+msg+=`\nTOTAL ITEMS: ${items}\nTOTAL SALES: TSH ${total}`;
+
+let phone="255670601120";
+
+let url="https://wa.me/"+phone+"?text="+encodeURIComponent(msg);
+
+window.open(url,"_blank");
+}
+
+render();
+
+</script>
+
+</body>
+</html>
